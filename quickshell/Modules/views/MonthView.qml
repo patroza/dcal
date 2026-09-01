@@ -318,15 +318,7 @@ Item {
                         readonly property bool previewTrailing: inPreviewRange && cellDate.getTime() === (I18n.isRtl ? root.previewStart : root.previewEnd)
                         readonly property var cellEvents: {
                             root.eventsVersion;
-                            let items = DankCalService.eventsForDay(cellDate);
-                            if (SettingsData.showTasks)
-                                items = items.concat(DankCalService.tasksForDay(cellDate, false));
-                            items.sort((a, b) => {
-                                if (a.allDay !== b.allDay)
-                                    return a.allDay ? -1 : 1;
-                                return a.start - b.start;
-                            });
-                            return items;
+                            return DankCalService.scheduledItemsForDay(cellDate);
                         }
 
                         // On today, events that have already ended yield their

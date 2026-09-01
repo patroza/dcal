@@ -1083,8 +1083,20 @@ Singleton {
         return visibleTasks(includeCompleted).filter(t => t.due && t.due >= start && t.due < end).map(t => Object.assign({}, t, {
             "isTask": true,
             "start": t.due,
-            "end": t.due
+            "end": t.allDay ? t.due : new Date(t.due.getTime() + 30 * 60000)
         }));
+    }
+
+    function scheduledItemsForDay(day) {
+        let items = eventsForDay(day);
+        if (SettingsData.showTasks)
+            items = items.concat(tasksForDay(day, false));
+        items.sort((a, b) => {
+            if (a.allDay !== b.allDay)
+                return a.allDay ? -1 : 1;
+            return a.start - b.start;
+        });
+        return items;
     }
 
     // _compareTasks orders by due date (undated last), then by priority with 1

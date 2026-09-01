@@ -224,6 +224,7 @@ Item {
                     selectedEventKey: root.selectedEventKey
                     selectedEventKeys: root.selectedEventKeys
                     onEventClicked: (ev, modifiers) => root.eventClicked(ev, modifiers)
+                    onTaskClicked: task => root.taskClicked(task)
                     onEventContextRequested: (ev, anchorItem, x, y) => root.eventContextRequested(ev, anchorItem, x, y)
                     onDayContextRequested: (day, anchorItem, x, y) => root.dayContextRequested(day, anchorItem, x, y)
                     onEventDropRequested: (ev, targetDay) => root.eventDropRequested(ev, targetDay)
@@ -240,6 +241,7 @@ Item {
                     selectedEventKey: root.selectedEventKey
                     selectedEventKeys: root.selectedEventKeys
                     onEventClicked: (ev, modifiers) => root.eventClicked(ev, modifiers)
+                    onTaskClicked: task => root.taskClicked(task)
                     onEventContextRequested: (ev, anchorItem, x, y) => root.eventContextRequested(ev, anchorItem, x, y)
                     onDayContextRequested: (day, anchorItem, x, y) => root.dayContextRequested(day, anchorItem, x, y)
                     onPreviousRequested: root.previousRequested()
@@ -256,6 +258,7 @@ Item {
                     selectedEventKey: root.selectedEventKey
                     selectedEventKeys: root.selectedEventKeys
                     onEventClicked: (ev, modifiers) => root.eventClicked(ev, modifiers)
+                    onTaskClicked: task => root.taskClicked(task)
                     onEventContextRequested: (ev, anchorItem, x, y) => root.eventContextRequested(ev, anchorItem, x, y)
                     onDayContextRequested: (day, anchorItem, x, y) => root.dayContextRequested(day, anchorItem, x, y)
                 }
