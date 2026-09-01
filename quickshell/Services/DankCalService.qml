@@ -1074,6 +1074,31 @@ Singleton {
         return out;
     }
 
+    // Scheduled VTODOs are calendar items too. Keep the task object intact so
+    // calendar views can open the task editor and toggle completion, while
+    // providing the event-shaped timing fields their layout code expects.
+    function tasksForDay(day, includeCompleted) {
+        const start = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+        const end = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+        return visibleTasks(includeCompleted).filter(t => t.due && t.due >= start && t.due < end).map(t => Object.assign({}, t, {
+            "isTask": true,
+            "start": t.due,
+            "end": t.allDay ? t.due : new Date(t.due.getTime() + 30 * 60000)
+        }));
+    }
+
+    function scheduledItemsForDay(day) {
+        let items = eventsForDay(day);
+        if (SettingsData.showTasks)
+            items = items.concat(tasksForDay(day, false));
+        items.sort((a, b) => {
+            if (a.allDay !== b.allDay)
+                return a.allDay ? -1 : 1;
+            return a.start - b.start;
+        });
+        return items;
+    }
+
     // _compareTasks orders by due date (undated last), then by priority with 1
     // highest and 0 (unset) last, then title.
     function _compareTasks(a, b) {

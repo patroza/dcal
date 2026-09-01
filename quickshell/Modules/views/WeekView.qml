@@ -21,6 +21,7 @@ Item {
     property point dragPosition: Qt.point(0, 0)
 
     signal eventClicked(var event, int modifiers)
+    signal taskClicked(var task)
     signal eventContextRequested(var event, var anchorItem, real x, real y)
     signal dayContextRequested(date day, var anchorItem, real x, real y)
     signal eventDropRequested(var event, date targetDay)
@@ -28,6 +29,8 @@ Item {
     signal createTimedRequested(date start, date end)
 
     function isEventSelected(event) {
+        if (event.isTask)
+            return false;
         const key = DankCalService.eventKey(event);
         return selectedEventKey === key || selectedEventKeys.indexOf(key) !== -1;
     }
@@ -159,6 +162,9 @@ Item {
         function onEventsUpdated() {
             root.eventsVersion++;
         }
+        function onTasksUpdated() {
+            root.eventsVersion++;
+        }
     }
 
     DankTooltipV2 {
@@ -167,6 +173,8 @@ Item {
 
     function eventTooltip(ev) {
         const suffix = (ev.location ? " · " + ev.location : "") + (ev.calendar ? " · " + ev.calendar : "");
+        if (ev.isTask)
+            return ev.title + " · " + (ev.allDay ? I18n.tr("All day", "all-day marker in task tooltip") : SettingsData.formatTime(ev.due)) + suffix;
         if (ev.allDay)
             return ev.title + " · " + I18n.tr("All day", "all-day marker in event tooltip") + suffix;
         return ev.title + " · " + SettingsData.formatTime(ev.start) + " – " + SettingsData.formatTime(ev.end) + suffix;
@@ -186,7 +194,7 @@ Item {
         const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
         const dayEnd = new Date(dayStart.getTime() + 86400000);
         const out = [];
-        const list = DankCalService.eventsForDay(day);
+        const list = DankCalService.scheduledItemsForDay(day);
         for (let i = 0; i < list.length; i++) {
             const ev = list[i];
             if (ev.allDay)
@@ -206,7 +214,7 @@ Item {
     }
 
     function allDayEventsFor(day) {
-        return DankCalService.eventsForDay(day).filter(ev => ev.allDay);
+        return DankCalService.scheduledItemsForDay(day).filter(ev => ev.allDay);
     }
 
     readonly property int allDayMax: {
@@ -222,7 +230,7 @@ Item {
         const dayEnd = new Date(dayStart.getTime() + 86400000);
         const coreStart = dayStart.getTime() + root.startHour * 3600000;
         const coreEnd = dayStart.getTime() + root.endHour * 3600000;
-        const list = DankCalService.eventsForDay(day);
+        const list = DankCalService.scheduledItemsForDay(day);
         let count = 0;
         let before = false;
         let after = false;
@@ -489,14 +497,17 @@ Item {
                                         EventMouseArea {
                                             anchors.fill: parent
                                             eventData: parent.modelData
-                                            dragEnabled: !parent.modelData.readOnly
+                                            dragEnabled: !parent.modelData.isTask && !parent.modelData.readOnly
                                             onEntered: chipTooltip.show(root.eventTooltip(parent.modelData), parent)
                                             onExited: chipTooltip.hide()
                                             onActivated: (event, modifiers) => {
                                                 chipTooltip.hide();
-                                                root.eventClicked(event, modifiers);
+                                                if (event.isTask)
+                                                    root.taskClicked(event);
+                                                else
+                                                    root.eventClicked(event, modifiers);
                                             }
-                                            onContextRequested: (event, anchorItem, x, y) => root.eventContextRequested(event, anchorItem, x, y)
+                                            onContextRequested: (event, anchorItem, x, y) => event.isTask ? root.taskClicked(event) : root.eventContextRequested(event, anchorItem, x, y)
                                             onDragPressed: root.eventPointerDown = true
                                             onDragStarted: (event, pointerItem, x, y) => {
                                                 chipTooltip.hide();
@@ -773,14 +784,17 @@ Item {
                                         EventMouseArea {
                                             anchors.fill: parent
                                             eventData: parent.modelData
-                                            dragEnabled: !parent.modelData.readOnly
+                                            dragEnabled: !parent.modelData.isTask && !parent.modelData.readOnly
                                             onEntered: chipTooltip.show(root.eventTooltip(parent.modelData), parent)
                                             onExited: chipTooltip.hide()
                                             onActivated: (event, modifiers) => {
                                                 chipTooltip.hide();
-                                                root.eventClicked(event, modifiers);
+                                                if (event.isTask)
+                                                    root.taskClicked(event);
+                                                else
+                                                    root.eventClicked(event, modifiers);
                                             }
-                                            onContextRequested: (event, anchorItem, x, y) => root.eventContextRequested(event, anchorItem, x, y)
+                                            onContextRequested: (event, anchorItem, x, y) => event.isTask ? root.taskClicked(event) : root.eventContextRequested(event, anchorItem, x, y)
                                             onDragPressed: root.eventPointerDown = true
                                             onDragStarted: (event, pointerItem, x, y) => {
                                                 chipTooltip.hide();

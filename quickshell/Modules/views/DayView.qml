@@ -15,6 +15,7 @@ Item {
     property int eventsVersion: 0
 
     signal eventClicked(var event, int modifiers)
+    signal taskClicked(var task)
     signal eventContextRequested(var event, var anchorItem, real x, real y)
     signal dayContextRequested(date day, var anchorItem, real x, real y)
     signal previousRequested
@@ -22,6 +23,8 @@ Item {
     signal createTimedRequested(date start, date end)
 
     function isEventSelected(event) {
+        if (event.isTask)
+            return false;
         const key = DankCalService.eventKey(event);
         return selectedEventKey === key || selectedEventKeys.indexOf(key) !== -1;
     }
@@ -66,6 +69,9 @@ Item {
         function onEventsUpdated() {
             root.eventsVersion++;
         }
+        function onTasksUpdated() {
+            root.eventsVersion++;
+        }
     }
 
     DankTooltipV2 {
@@ -74,6 +80,8 @@ Item {
 
     function eventTooltip(ev) {
         const suffix = (ev.location ? " · " + ev.location : "") + (ev.calendar ? " · " + ev.calendar : "");
+        if (ev.isTask)
+            return ev.title + " · " + (ev.allDay ? I18n.tr("All day", "all-day marker in task tooltip") : SettingsData.formatTime(ev.due)) + suffix;
         if (ev.allDay)
             return ev.title + " · " + I18n.tr("All day", "all-day marker in event tooltip") + suffix;
         return ev.title + " · " + SettingsData.formatTime(ev.start) + " – " + SettingsData.formatTime(ev.end) + suffix;
@@ -90,7 +98,7 @@ Item {
 
     readonly property var dayEvents: {
         eventsVersion;
-        return DankCalService.eventsForDay(displayDate);
+        return DankCalService.scheduledItemsForDay(displayDate);
     }
 
     readonly property var allDayEvents: dayEvents.filter(ev => ev.allDay)
@@ -243,9 +251,12 @@ Item {
                     onExited: chipTooltip.hide()
                     onActivated: (event, modifiers) => {
                         chipTooltip.hide();
-                        root.eventClicked(event, modifiers);
+                        if (event.isTask)
+                            root.taskClicked(event);
+                        else
+                            root.eventClicked(event, modifiers);
                     }
-                    onContextRequested: (event, anchorItem, x, y) => root.eventContextRequested(event, anchorItem, x, y)
+                    onContextRequested: (event, anchorItem, x, y) => event.isTask ? root.taskClicked(event) : root.eventContextRequested(event, anchorItem, x, y)
                 }
             }
         }
@@ -469,9 +480,12 @@ Item {
                             onExited: chipTooltip.hide()
                             onActivated: (event, modifiers) => {
                                 chipTooltip.hide();
-                                root.eventClicked(event, modifiers);
+                                if (event.isTask)
+                                    root.taskClicked(event);
+                                else
+                                    root.eventClicked(event, modifiers);
                             }
-                            onContextRequested: (event, anchorItem, x, y) => root.eventContextRequested(event, anchorItem, x, y)
+                            onContextRequested: (event, anchorItem, x, y) => event.isTask ? root.taskClicked(event) : root.eventContextRequested(event, anchorItem, x, y)
                         }
                     }
                 }

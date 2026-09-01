@@ -16,10 +16,13 @@ Item {
     readonly property int daysAhead: 14
 
     signal eventClicked(var event, int modifiers)
+    signal taskClicked(var task)
     signal eventContextRequested(var event, var anchorItem, real x, real y)
     signal dayContextRequested(date day, var anchorItem, real x, real y)
 
     function isEventSelected(event) {
+        if (event.isTask)
+            return false;
         const key = DankCalService.eventKey(event);
         return selectedEventKey === key || selectedEventKeys.indexOf(key) !== -1;
     }
@@ -38,6 +41,9 @@ Item {
     Connections {
         target: DankCalService
         function onEventsUpdated() {
+            root.eventsVersion++;
+        }
+        function onTasksUpdated() {
             root.eventsVersion++;
         }
     }
@@ -73,13 +79,13 @@ Item {
         const out = [];
         for (let i = 0; i < daysAhead; i++) {
             const d = new Date(displayDate.getFullYear(), displayDate.getMonth(), displayDate.getDate() + i);
-            const evs = DankCalService.eventsForDay(d);
+            const evs = DankCalService.scheduledItemsForDay(d);
             if (evs.length === 0)
                 continue;
             const cards = evs.map(ev => {
                 const card = Object.assign({}, ev);
                 card.time = ev.allDay ? I18n.tr("All day", "time column label for all-day events on agenda card") : SettingsData.formatTime(ev.start);
-                card.duration = durationLabel(ev);
+                card.duration = ev.isTask ? "" : durationLabel(ev);
                 card.preview = DankCalService.descriptionPreview(ev);
                 return card;
             });
@@ -287,8 +293,8 @@ Item {
                                 id: cardArea
                                 anchors.fill: parent
                                 eventData: card.modelData
-                                onActivated: (event, modifiers) => root.eventClicked(event, modifiers)
-                                onContextRequested: (event, anchorItem, x, y) => root.eventContextRequested(event, anchorItem, x, y)
+                                onActivated: (event, modifiers) => event.isTask ? root.taskClicked(event) : root.eventClicked(event, modifiers)
+                                onContextRequested: (event, anchorItem, x, y) => event.isTask ? root.taskClicked(event) : root.eventContextRequested(event, anchorItem, x, y)
                             }
                         }
                     }

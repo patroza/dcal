@@ -14,6 +14,7 @@ Item {
     property var selectedEventKeys: []
 
     signal eventClicked(var event, int modifiers)
+    signal taskClicked(var task)
     signal eventContextRequested(var event, var anchorItem, real x, real y)
 
     readonly property int rowHeight: 38
@@ -195,6 +196,11 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: mouse => {
+                            if (eventRow.modelData.isTask) {
+                                root.taskClicked(eventRow.modelData);
+                                popup.close();
+                                return;
+                            }
                             if (mouse.button === Qt.RightButton) {
                                 root.eventContextRequested(eventRow.modelData, eventRow, mouse.x, mouse.y);
                                 return;
