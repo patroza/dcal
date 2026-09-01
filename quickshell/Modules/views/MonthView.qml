@@ -17,6 +17,7 @@ Item {
     signal daySelected(date day)
     signal dayActivated(date day)
     signal eventClicked(var event, int modifiers)
+    signal taskClicked(var task)
     signal eventContextRequested(var event, var anchorItem, real x, real y)
     signal dayContextRequested(date day, var anchorItem, real x, real y)
     signal eventDropRequested(var event, date targetDay)
@@ -130,6 +131,9 @@ Item {
         function onEventsUpdated() {
             root.eventsVersion++;
         }
+        function onTasksUpdated() {
+            root.eventsVersion++;
+        }
     }
 
     DankTooltipV2 {
@@ -140,10 +144,13 @@ Item {
         id: dayPopover
         selectedEventKeys: root.selectedEventKeys
         onEventClicked: (ev, modifiers) => root.eventClicked(ev, modifiers)
+        onTaskClicked: task => root.taskClicked(task)
         onEventContextRequested: (ev, anchorItem, x, y) => root.eventContextRequested(ev, anchorItem, x, y)
     }
 
     function eventTooltip(ev) {
+        if (ev.isTask)
+            return ev.title + " · " + (ev.allDay ? I18n.tr("All day", "all-day marker in task tooltip") : SettingsData.formatTime(ev.due)) + (ev.calendar ? " · " + ev.calendar : "");
         if (ev.allDay)
             return ev.title + " · " + I18n.tr("All day", "all-day marker in event tooltip") + (ev.calendar ? " · " + ev.calendar : "");
         return ev.title + " · " + SettingsData.formatTime(ev.start) + " – " + SettingsData.formatTime(ev.end) + (ev.calendar ? " · " + ev.calendar : "");
@@ -311,7 +318,15 @@ Item {
                         readonly property bool previewTrailing: inPreviewRange && cellDate.getTime() === (I18n.isRtl ? root.previewStart : root.previewEnd)
                         readonly property var cellEvents: {
                             root.eventsVersion;
-                            return DankCalService.eventsForDay(cellDate);
+                            let items = DankCalService.eventsForDay(cellDate);
+                            if (SettingsData.showTasks)
+                                items = items.concat(DankCalService.tasksForDay(cellDate, false));
+                            items.sort((a, b) => {
+                                if (a.allDay !== b.allDay)
+                                    return a.allDay ? -1 : 1;
+                                return a.start - b.start;
+                            });
+                            return items;
                         }
 
                         // On today, events that have already ended yield their
@@ -504,14 +519,22 @@ Item {
                                     EventMouseArea {
                                         anchors.fill: parent
                                         eventData: parent.modelData
-                                        dragEnabled: !parent.modelData.readOnly
+                                        dragEnabled: !parent.modelData.isTask && !parent.modelData.readOnly
                                         onEntered: chipTooltip.show(root.eventTooltip(parent.modelData), parent)
                                         onExited: chipTooltip.hide()
                                         onActivated: (event, modifiers) => {
                                             chipTooltip.hide();
-                                            root.eventClicked(event, modifiers);
+                                            if (event.isTask)
+                                                root.taskClicked(event);
+                                            else
+                                                root.eventClicked(event, modifiers);
                                         }
-                                        onContextRequested: (event, anchorItem, x, y) => root.eventContextRequested(event, anchorItem, x, y)
+                                        onContextRequested: (event, anchorItem, x, y) => {
+                                            if (event.isTask)
+                                                root.taskClicked(event);
+                                            else
+                                                root.eventContextRequested(event, anchorItem, x, y);
+                                        }
                                         onDragPressed: root.eventPointerDown = true
                                         onDragStarted: (event, pointerItem, x, y) => {
                                             chipTooltip.hide();
