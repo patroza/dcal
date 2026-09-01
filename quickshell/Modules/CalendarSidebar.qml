@@ -29,6 +29,17 @@ Item {
 
     implicitWidth: 240
 
+    function taskOverdue(task) {
+        return !!task.due && !task.completed && task.due.getTime() < Date.now();
+    }
+
+    function taskDueLabel(task) {
+        if (!task.due)
+            return "";
+        const date = SettingsData.formatDate(task.due, "MMM d");
+        return task.allDay ? date : date + " · " + SettingsData.formatTime(task.due);
+    }
+
     readonly property var viewItems: {
         const items = [
             {
@@ -679,6 +690,7 @@ Item {
                     Item {
                         id: taskRow
                         required property var modelData
+                        readonly property bool overdue: root.taskOverdue(modelData)
                         readonly property string rowTooltip: {
                             const acct = modelData.accountSummary || "";
                             if (modelData.calendar === "")
@@ -691,13 +703,13 @@ Item {
                                 root.revealNav(taskRow);
                         }
                         width: parent.width
-                        height: 42
+                        height: 46
                         visible: root.tasksExpanded
 
                         Rectangle {
                             anchors.fill: parent
                             radius: Theme.cornerRadiusSmall
-                            color: "transparent"
+                            color: taskRow.overdue ? Theme.withAlpha(Theme.error, 0.10) : "transparent"
                             border.color: taskRow.navSelected ? Theme.primary : "transparent"
                             border.width: taskRow.navSelected ? 2 : 0
                         }
@@ -711,7 +723,7 @@ Item {
                             anchors.leftMargin: Theme.spacingXS
                             anchors.verticalCenter: parent.verticalCenter
                             color: "transparent"
-                            border.color: taskRow.modelData.color
+                            border.color: taskRow.overdue ? Theme.error : taskRow.modelData.color
                             border.width: 2
 
                             StateLayer {
@@ -734,7 +746,7 @@ Item {
                                 width: parent.width
                                 text: taskRow.modelData.title
                                 font.pixelSize: Theme.fontSizeMedium
-                                color: Theme.surfaceText
+                                color: taskRow.overdue ? Theme.error : Theme.surfaceText
                                 wrapMode: Text.NoWrap
                                 maximumLineCount: 1
                                 elide: Text.ElideRight
@@ -743,10 +755,15 @@ Item {
 
                             StyledText {
                                 width: parent.width
-                                visible: taskRow.modelData.calendar !== ""
-                                text: taskRow.modelData.calendar
+                                visible: text !== ""
+                                text: {
+                                    const due = root.taskDueLabel(taskRow.modelData);
+                                    if (due === "")
+                                        return taskRow.modelData.calendar;
+                                    return taskRow.modelData.calendar === "" ? due : due + "  ·  " + taskRow.modelData.calendar;
+                                }
                                 font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
+                                color: taskRow.overdue ? Theme.error : Theme.surfaceVariantText
                                 wrapMode: Text.NoWrap
                                 maximumLineCount: 1
                                 elide: Text.ElideRight

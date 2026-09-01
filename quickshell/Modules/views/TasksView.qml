@@ -27,16 +27,25 @@ Item {
             return "";
         const todayStart = new Date(root.today.getFullYear(), root.today.getMonth(), root.today.getDate());
         const diff = Math.round((task.due.getTime() - todayStart.getTime()) / 86400000);
+        let dateLabel = "";
         switch (diff) {
         case 0:
-            return I18n.tr("Today", "due-date label on a task card");
+            dateLabel = I18n.tr("Today", "due-date label on a task card");
+            break;
         case 1:
-            return I18n.tr("Tomorrow", "due-date label on a task card");
+            dateLabel = I18n.tr("Tomorrow", "due-date label on a task card");
+            break;
         case -1:
-            return I18n.tr("Yesterday", "due-date label on a task card");
+            dateLabel = I18n.tr("Yesterday", "due-date label on a task card");
+            break;
         default:
-            return SettingsData.formatDate(task.due, "MMM d");
+            dateLabel = SettingsData.formatDate(task.due, "MMM d");
         }
+        return task.allDay ? dateLabel : dateLabel + " · " + SettingsData.formatTime(task.due);
+    }
+
+    function taskOverdue(task) {
+        return !!task.due && !task.completed && task.due.getTime() < Date.now();
     }
 
     readonly property var sections: {
@@ -149,10 +158,12 @@ Item {
                         StyledRect {
                             id: card
                             required property var modelData
-                            readonly property bool overdue: section.modelData.overdue
+                            readonly property bool overdue: root.taskOverdue(modelData)
                             width: root.width
                             height: Math.max(60, contentRow.implicitHeight + Theme.spacingM * 2)
-                            color: Theme.surfaceContainer
+                            color: overdue ? Theme.withAlpha(Theme.error, 0.10) : Theme.surfaceContainer
+                            border.color: overdue ? Theme.error : "transparent"
+                            border.width: overdue ? 1 : 0
                             radius: Theme.cornerRadius
 
                             // Declared before contentRow so the checkbox's own
@@ -180,7 +191,7 @@ Item {
                                     radius: 11
                                     anchors.verticalCenter: parent.verticalCenter
                                     color: card.modelData.completed ? card.modelData.color : "transparent"
-                                    border.color: card.modelData.color
+                                    border.color: card.overdue ? Theme.error : card.modelData.color
                                     border.width: 2
 
                                     DankIcon {
@@ -209,7 +220,7 @@ Item {
                                         font.pixelSize: Theme.fontSizeLarge
                                         font.weight: Font.Medium
                                         font.strikeout: card.modelData.completed
-                                        color: card.modelData.completed ? Theme.surfaceVariantText : Theme.surfaceText
+                                        color: card.modelData.completed ? Theme.surfaceVariantText : (card.overdue ? Theme.error : Theme.surfaceText)
                                         width: parent.width
                                         wrapMode: Text.WordWrap
                                         maximumLineCount: 2
