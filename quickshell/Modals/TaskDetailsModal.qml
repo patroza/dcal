@@ -4,6 +4,7 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 import qs.DankCommon.Widgets
+import "../Common/TaskDue.js" as TaskDue
 
 FloatingWindow {
     id: taskModal
@@ -20,6 +21,8 @@ FloatingWindow {
     property string formNotes: ""
     property bool formHasDue: false
     property date formDueDate: new Date()
+    property bool formHasTime: false
+    property int formDueMinutes: 540
     property int formPriority: 0
     property bool formCompleted: false
     property int formCalendarIndex: 0
@@ -108,7 +111,10 @@ FloatingWindow {
         formTitle = task.title || "";
         formNotes = task.description || "";
         formHasDue = !!task.due;
-        formDueDate = task.due ? new Date(task.due) : new Date();
+        const due = TaskDue.load(task);
+        formDueDate = due.date;
+        formHasTime = due.hasTime;
+        formDueMinutes = due.minutes;
         formPriority = task.priority || 0;
         formCompleted = task.status === "completed";
 
@@ -201,13 +207,22 @@ FloatingWindow {
         else if (task.status === "in_process")
             status = "in_process";
 
+        let due = "";
+        try {
+            if (formHasDue)
+                due = _dueIso();
+        } catch (error) {
+            formError = I18n.tr("This time does not exist on the selected date. Choose another time.", "task form validation for a daylight-saving time gap");
+            return;
+        }
+
         const fields = {
             "summary": formTitle.trim(),
             "description": formNotes,
             "priority": formPriority,
             "status": status,
-            "allDay": true,
-            "due": formHasDue ? _dueIso() : "",
+            "allDay": formHasDue && !formHasTime,
+            "due": due,
             "recurrence": _recurrenceRules()
         };
 
@@ -235,11 +250,8 @@ FloatingWindow {
         }
     }
 
-    // _dueIso pins the chosen due date to UTC midnight so an all-day task lands
-    // on that calendar day regardless of the local offset.
     function _dueIso() {
-        const d = formDueDate;
-        return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+        return TaskDue.serialize(formDueDate, formHasTime, formDueMinutes, task);
     }
 
     function removeTask() {
@@ -340,6 +352,35 @@ FloatingWindow {
                     firstDayOfWeek: SettingsData.effectiveFirstDayOfWeek
                     selectedDate: taskModal.formDueDate
                     onDateSelected: value => taskModal.formDueDate = value
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            Row {
+                width: parent.width
+                spacing: Theme.spacingM
+                visible: taskModal.formHasDue
+
+                DankToggle {
+                    id: timeToggle
+                    checked: taskModal.formHasTime
+                    onToggled: checked => taskModal.formHasTime = checked
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                StyledText {
+                    text: I18n.tr("Time", "task form toggle label for a timed due date")
+                    font.pixelSize: Theme.fontSizeMedium
+                    color: Theme.surfaceText
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                DankTimePicker {
+                    visible: taskModal.formHasTime
+                    width: 220
+                    use24Hour: SettingsData.use24HourTime
+                    minutes: taskModal.formDueMinutes
+                    onTimeSelected: value => taskModal.formDueMinutes = value
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
