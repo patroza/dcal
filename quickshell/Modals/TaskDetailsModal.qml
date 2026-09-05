@@ -196,6 +196,10 @@ FloatingWindow {
     }
 
     function save() {
+        // Mouse-only Save does not transfer focus away from the time input.
+        // Commit typed text before collecting the form fields.
+        if (formHasDue && formHasTime)
+            dueTimePicker._commit();
         if (formTitle.trim() === "") {
             formError = I18n.tr("Title is required", "task form validation error for missing title");
             return;
@@ -376,6 +380,7 @@ FloatingWindow {
                 }
 
                 DankTimePicker {
+                    id: dueTimePicker
                     visible: taskModal.formHasTime
                     width: 220
                     use24Hour: SettingsData.use24HourTime
