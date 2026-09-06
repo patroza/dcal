@@ -52,6 +52,7 @@ ShellRoot {
     }
 
     property string pendingSubscribeUrl: ""
+    property var pendingImport: null
     property string pendingView: ""
     property var pendingEvent: null
     property string pendingTaskId: ""
@@ -100,6 +101,24 @@ ShellRoot {
             return;
         windowLoader.item.openSubscribe(pendingSubscribeUrl);
         pendingSubscribeUrl = "";
+    }
+
+    function handleImportIcs(ics, name) {
+        if (ics === "")
+            return;
+        pendingImport = {
+            "ics": ics,
+            "name": name
+        };
+        showAndFocus();
+        applyPendingImport();
+    }
+
+    function applyPendingImport() {
+        if (!windowLoader.item || !pendingImport)
+            return;
+        windowLoader.item.openImport(pendingImport.ics, pendingImport.name);
+        pendingImport = null;
     }
 
     function handleOpenEvent(uid, start) {
@@ -167,6 +186,9 @@ ShellRoot {
         function onSubscribeRequested(url) {
             root.handleSubscribe(url);
         }
+        function onImportIcsRequested(ics, name) {
+            root.handleImportIcs(ics, name);
+        }
         function onOpenEventRequested(uid, start) {
             root.handleOpenEvent(uid, start);
         }
@@ -183,6 +205,7 @@ ShellRoot {
         function onItemChanged() {
             root.applyPendingView();
             root.applyPendingSubscribe();
+            root.applyPendingImport();
             root.applyPendingEvent();
             root.applyPendingTask();
             root.applyPendingNewEvent();
