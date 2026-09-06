@@ -374,6 +374,27 @@ FloatingWindow {
         taskLoader.item.show(task);
     }
 
+    function openTaskById(id) {
+        const loaded = DankCalService.findTask(id);
+        if (loaded) {
+            if (loaded.due) {
+                selectedDate = loaded.due;
+                displayDate = alignedDisplayDate(loaded.due);
+            }
+            openTaskDetails(loaded);
+            return;
+        }
+        DankCalService.fetchTask(id, task => {
+            if (!task)
+                return;
+            if (task.due) {
+                selectedDate = task.due;
+                displayDate = alignedDisplayDate(task.due);
+            }
+            openTaskDetails(task);
+        });
+    }
+
     function openCreateTask() {
         taskLoader.active = true;
         taskLoader.item.showCreate();

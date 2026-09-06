@@ -66,6 +66,14 @@ func HandleUI(_ context.Context, w *ConnWriter, req Request, deps Deps) {
 		}
 		publishUI(deps, payload)
 		Respond(w, req.ID, map[string]any{"ok": true})
+	case "ui.openTask":
+		id := strings.TrimSpace(ParamString(req.Params, "id"))
+		if id == "" {
+			RespondError(w, req.ID, "ui.openTask requires an id")
+			return
+		}
+		publishUI(deps, map[string]any{"action": "openTask", "id": id})
+		Respond(w, req.ID, map[string]any{"ok": true})
 	case "ui.newEvent":
 		payload := map[string]any{"action": "newEvent"}
 		if start := strings.TrimSpace(ParamString(req.Params, "start")); start != "" {

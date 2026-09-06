@@ -54,6 +54,7 @@ ShellRoot {
     property string pendingSubscribeUrl: ""
     property string pendingView: ""
     property var pendingEvent: null
+    property string pendingTaskId: ""
     property var pendingNewEvent: null
 
     function handleWindowAction(action, view) {
@@ -119,6 +120,22 @@ ShellRoot {
         pendingEvent = null;
     }
 
+    function handleOpenTask(id) {
+        if (id === "")
+            return;
+        pendingTaskId = id;
+        showAndFocus();
+        applyPendingTask();
+    }
+
+    function applyPendingTask() {
+        if (!windowLoader.item || pendingTaskId === "")
+            return;
+        const id = pendingTaskId;
+        pendingTaskId = "";
+        windowLoader.item.openTaskById(id);
+    }
+
     function handleNewEvent(start) {
         pendingNewEvent = {
             "start": start || ""
@@ -153,6 +170,9 @@ ShellRoot {
         function onOpenEventRequested(uid, start) {
             root.handleOpenEvent(uid, start);
         }
+        function onOpenTaskRequested(id) {
+            root.handleOpenTask(id);
+        }
         function onNewEventRequested(start) {
             root.handleNewEvent(start);
         }
@@ -164,6 +184,7 @@ ShellRoot {
             root.applyPendingView();
             root.applyPendingSubscribe();
             root.applyPendingEvent();
+            root.applyPendingTask();
             root.applyPendingNewEvent();
         }
     }

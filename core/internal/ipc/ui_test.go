@@ -71,6 +71,16 @@ func TestUIOpenEventPublishesToSubscriber(t *testing.T) {
 	assert.Nil(t, deps.Pending.Take())
 }
 
+func TestUIOpenTaskStashesWithoutSubscriber(t *testing.T) {
+	deps := Deps{Bus: NewEventBus(), Pending: &PendingOpen{}}
+	out := routeAndRead(t, Request{ID: 4, Method: "ui.openTask", Params: map[string]any{"id": "task-1"}}, deps)
+
+	result, ok := out["result"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, true, result["ok"])
+	assert.Equal(t, map[string]any{"action": "openTask", "id": "task-1"}, deps.Pending.Take())
+}
+
 func TestUINewEventStashesWithoutSubscriber(t *testing.T) {
 	deps := Deps{Bus: NewEventBus(), Pending: &PendingOpen{}}
 	out := routeAndRead(t, Request{ID: 3, Method: "ui.newEvent", Params: map[string]any{"start": "2026-07-01T09:00:00Z"}}, deps)

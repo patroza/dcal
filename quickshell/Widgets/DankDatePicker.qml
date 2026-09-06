@@ -73,6 +73,7 @@ Item {
 
             StyledText {
                 text: SettingsData.formatDate(root.selectedDate, root.dateFormat)
+                color: Theme.surfaceText
                 font.pixelSize: Theme.fontSizeMedium
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -198,6 +199,7 @@ Item {
                 StyledText {
                     anchors.centerIn: parent
                     text: SettingsData.formatDate(popup.displayDate, "MMMM yyyy")
+                    color: Theme.surfaceText
                     font.pixelSize: Theme.fontSizeMedium
                     font.weight: Font.Medium
                 }

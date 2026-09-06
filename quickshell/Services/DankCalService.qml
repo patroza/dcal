@@ -60,6 +60,7 @@ Singleton {
     signal windowActionRequested(string action, string view)
     signal subscribeRequested(string url)
     signal openEventRequested(string uid, string start)
+    signal openTaskRequested(string id)
     signal newEventRequested(string start)
     signal colorSchemeUpdate(var data)
 
@@ -233,6 +234,9 @@ Singleton {
                     break;
                 case "openEvent":
                     openEventRequested(data.uid || "", data.start || "");
+                    break;
+                case "openTask":
+                    openTaskRequested(data.id || "");
                     break;
                 case "newEvent":
                     newEventRequested(data.start || "");
@@ -953,6 +957,25 @@ Singleton {
             "recurrence": t.recurrence || [],
             "recurring": (t.recurrence || []).length > 0
         };
+    }
+
+    function findTask(id) {
+        for (let i = 0; i < tasks.length; i++) {
+            if (tasks[i].id === id)
+                return decorateTask(tasks[i]);
+        }
+        return null;
+    }
+
+    function fetchTask(id, callback) {
+        sendRequest("tasks.get", { "id": id }, response => {
+            if (response.error) {
+                lastError = response.error;
+                callback(null);
+                return;
+            }
+            callback(decorateTask(_normalizeTask(response.result || {})));
+        });
     }
 
     // calendarAccountKind resolves a calendar's provider kind (e.g. "google",
